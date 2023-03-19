@@ -12,15 +12,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Interfaces\IRedisCacheService.cs" />
-    <Compile Remove="Interfaces\ISignalrGroupService.cs" />
-    <Compile Remove="Interfaces\IUserTokenManager.cs" />
-    <Compile Remove="Services\RedisCacheService.cs" />
-    <Compile Remove="Services\SignalrGroupService.cs" />
-    <Compile Remove="Services\UserTokenManager.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="TeamsApplicationSettings.json" />
   </ItemGroup>
 
