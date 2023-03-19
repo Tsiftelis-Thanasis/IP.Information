@@ -52,5 +52,6 @@ namespace IP.Information.Application.Services
                 LastUpdate = DateTime.Now;
             }
 
+        }
     }
 }
