@@ -2,7 +2,6 @@ using IP.Information.Application.Interfaces;
 using IP.Information.Contract.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
 
 namespace IP.Information.Api.Controllers
 {
@@ -15,7 +14,7 @@ namespace IP.Information.Api.Controllers
         private readonly IIPAddressStore _store;
         private readonly ICachingIPAddresses _cachingIPAddresses;
         private readonly IConfiguration _configuration;
-       
+
         public IPAddressesController(ILogger<IPAddressesController> logger,
             IConnectionService connectionService, IIPAddressStore store, ICachingIPAddresses cachingIPAddresses, IConfiguration configuration)
         {
@@ -50,8 +49,9 @@ namespace IP.Information.Api.Controllers
                     res = await _connectionService.GetIPAddress(ip, true);
                 }
             }
-            catch
+            catch (Exception e)
             {
+                _logger.LogError(e.Message);
                 return res;
             }
 
@@ -62,15 +62,17 @@ namespace IP.Information.Api.Controllers
         public IQueryable<ReportDto> GetCountriesReport()
         {
             List<ReportDto> res = new List<ReportDto>();
+            try
+            {
+                string? connString = _configuration.GetConnectionString("ConnStr");
 
-            string? connString = _configuration.GetConnectionString("ConnStr");
-
-            if (!string.IsNullOrEmpty(connString)) {
-                using (SqlConnection connection = new SqlConnection(connString))
+                if (!string.IsNullOrEmpty(connString))
                 {
-                    connection.Open();
+                    using (SqlConnection connection = new SqlConnection(connString))
+                    {
+                        connection.Open();
 
-                    var sql = @"with
+                        var sql = @"with
                         LastUpdateAt as (
                           select [IP], max(UpdatedAt) as LastUpdateAt
                           from dbo.ipaddresses I
@@ -84,26 +86,30 @@ namespace IP.Information.Api.Controllers
                               and lua.LastUpdateAt = I.UpdatedAt
                               group by C.[Name], lua.LastUpdateAt";
 
-                    using (SqlCommand command = new SqlCommand(sql, connection))
-                    {
-                        using (SqlDataReader reader = command.ExecuteReader())
+                        using (SqlCommand command = new SqlCommand(sql, connection))
                         {
-                            while (reader.Read())
+                            using (SqlDataReader reader = command.ExecuteReader())
                             {
-                                ReportDto reportDto = new ReportDto()
+                                while (reader.Read())
                                 {
-                                    Name = reader.GetString(0),
-                                    AddressesCount = reader.GetInt32(1),
-                                    LastUpdateAt = reader.GetDateTime(2),
-                                };
+                                    ReportDto reportDto = new ReportDto()
+                                    {
+                                        Name = reader.GetString(0),
+                                        AddressesCount = reader.GetInt32(1),
+                                        LastUpdateAt = reader.GetDateTime(2),
+                                    };
 
-                                res.Add(reportDto);
+                                    res.Add(reportDto);
+                                }
                             }
                         }
                     }
                 }
             }
-
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+            }
             return res.AsQueryable();
         }
     }

@@ -11,45 +11,47 @@ namespace IP.Information.Application.Services
 {
     public class CachingIPAddresses : ICachingIPAddresses
     {
+        private IAppLogger<ConnectionService> _logger;
         public ConcurrentQueue<IpAddressDto> IPAddressesDto { get; set; }
         public DateTime LastUpdate { get; set; }
 
-        private readonly IServiceScopeFactory _scopeFactory;
-        private AddressesContext _context;
-        private List<IPAddresses> DBIPAddresses;
-        private List<Countries> DBCountries;
         private bool _timeHasPassed;
         private int _startTime;
 
-        public CachingIPAddresses(IServiceScopeFactory scopeFactory)
+        public CachingIPAddresses(IAppLogger<ConnectionService> logger)
         {
-            _scopeFactory = scopeFactory;
-            _context = _scopeFactory.CreateScope().ServiceProvider.GetRequiredService<AddressesContext>();
-
             _timeHasPassed = true;
             _startTime = Environment.TickCount;
             _timeHasPassed = (Environment.TickCount - _startTime > 10000);
+            _logger = logger;
         }
 
         public void AddIPAddress(CountryDto country, string Ip)
         {
-            IpAddressDto IPAddress = new IpAddressDto()
+            try
             {
-                IP = Ip,
-                Country = country,
-                CreatedAt = DateTime.Now
-            };
+                IpAddressDto IPAddress = new IpAddressDto()
+                {
+                    IP = Ip,
+                    Country = country,
+                    CreatedAt = DateTime.Now
+                };
 
-            if (IPAddressesDto == null)
-            {
-                IPAddressesDto = new ConcurrentQueue<IpAddressDto>();
-                IPAddressesDto.Enqueue(IPAddress);
-                LastUpdate = DateTime.Now;
+                if (IPAddressesDto == null)
+                {
+                    IPAddressesDto = new ConcurrentQueue<IpAddressDto>();
+                    IPAddressesDto.Enqueue(IPAddress);
+                    LastUpdate = DateTime.Now;
+                }
+                else
+                {
+                    IPAddressesDto.Enqueue(IPAddress);
+                    LastUpdate = DateTime.Now;
+                }
             }
-            else
+            catch (Exception  ex)
             {
-                IPAddressesDto.Enqueue(IPAddress);
-                LastUpdate = DateTime.Now;
+                _logger.LogError(ex.Message);
             }
 
         }

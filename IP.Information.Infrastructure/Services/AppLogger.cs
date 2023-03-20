@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
-using IP.Information.Application.Interfaces;
+﻿using IP.Information.Application.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace IP.Information.Application.Services
 {

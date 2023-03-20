@@ -28,30 +28,36 @@ namespace IP.Information.Application.Services
         public async Task<IpAddressDto> GetIPAddress(string ip, bool addToStore)
         {
             IpAddressDto ipAddressDto = new IpAddressDto();
-
-            string result = await CallRoutingRestService(ip);
-            var vars = result.Split(';');
-
-            if (vars != null)
+            try
             {
-                CountryDto country = new CountryDto()
-                {
-                    Id = int.Parse(vars[0]),
-                    TwoLetterCode = vars[1],
-                    ThreeLetterCode = vars[2],
-                    Name = vars[3],
-                    CreatedAt = DateTime.Now
-                };
+                string result = await CallRoutingRestService(ip);
+                var vars = result.Split(';');
 
-                ipAddressDto.CreatedAt = DateTime.Now;
-                ipAddressDto.Country = country;
-                ipAddressDto.IP = ip;
-
-                if (addToStore)
+                if (vars != null)
                 {
-                    _cachingIPAddresses.AddIPAddress(country, ip);
-                    _store.AddIPAddress(country, ip, true);
+                    CountryDto country = new CountryDto()
+                    {
+                        Id = int.Parse(vars[0]),
+                        TwoLetterCode = vars[1],
+                        ThreeLetterCode = vars[2],
+                        Name = vars[3],
+                        CreatedAt = DateTime.Now
+                    };
+
+                    ipAddressDto.CreatedAt = DateTime.Now;
+                    ipAddressDto.Country = country;
+                    ipAddressDto.IP = ip;
+
+                    if (addToStore)
+                    {
+                        _cachingIPAddresses.AddIPAddress(country, ip);
+                        _store.AddIPAddress(country, ip, true);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
             }
 
             return ipAddressDto;
@@ -60,20 +66,27 @@ namespace IP.Information.Application.Services
         private async Task<string> CallRoutingRestService(string uriTemplate)
         {
             _httpClient = GetClient();
-
-            using (HttpResponseMessage response = await _httpClient.GetAsync(uriTemplate))
+            try
             {
-                if (response.IsSuccessStatusCode)
+                using (HttpResponseMessage response = await _httpClient.GetAsync(uriTemplate))
                 {
-                    var content = await response.Content.ReadAsStringAsync();
-                    _logger.LogInformation(content);
-                    return content;
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        _logger.LogInformation(content);
+                        return content;
+                    }
+                    else
+                    {
+                        _logger.LogError($"{response.StatusCode} {response.Content}");
+                        throw new HttpRequestException($"BadRequest for app connection {response.StatusCode}");
+                    }
                 }
-                else
-                {
-                    _logger.LogError($"{response.StatusCode} {response.Content}");
-                    throw new HttpRequestException($"BadRequest for app connection {response.StatusCode}");
-                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                return string.Empty;
             }
         }
 

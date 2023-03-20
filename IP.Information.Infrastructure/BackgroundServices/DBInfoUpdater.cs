@@ -1,6 +1,7 @@
 ﻿using IP.Information.Application.Context;
 using IP.Information.Application.Interfaces;
 using IP.Information.Application.Models;
+using IP.Information.Application.Services;
 using IP.Information.Contract.Dtos;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -19,21 +20,21 @@ namespace IP.Information.Application.BackgroundServices
         private AddressesContext _context;
         private List<IPAddresses> IPAddresses;
         private List<Countries> Countries;
-        private bool _timeHasPassed;
-        private int _startTime;
+        private IAppLogger<IPAddressStore> _logger;
 
         private double _lasttick = 0;
         private double _lastUpdate = 0;
         private double _updateTick = 10000;
         private DateTime _LastUpdate;
 
-        public DBInfoUpdater(IServiceScopeFactory scopeFactory, IConnectionService connectionService)
+        public DBInfoUpdater(IServiceScopeFactory scopeFactory, IConnectionService connectionService, IAppLogger<IPAddressStore> logger)
         {
             _connectionService = connectionService;
             _scopeFactory = scopeFactory;
             _context = _scopeFactory.CreateScope().ServiceProvider.GetRequiredService<AddressesContext>();
             _lasttick = 0;
             _LastUpdate = DateTime.Now;
+            _logger = logger;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -109,7 +110,7 @@ namespace IP.Information.Application.BackgroundServices
             }
             catch (Exception ex)
             {
-                //LogException(ex);
+                _logger.LogError(ex.Message);
             }
             finally
             {
