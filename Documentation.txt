@@ -16,14 +16,16 @@ A BackgroundService is also running in this application, DBInfoUpdater. Which up
 Because I update also the Countries, and it's not mentioned, I have added a new column (UpdatedAt) in the Countries table.
 The script is the following:
 alter table dbo.countries
-add [UpdatedAt] DATETIME2 (7) CONSTRAINT [DF_Countries_UpdatedAt] DEFAULT (getutcdate()) NOT NULL\
+add [UpdatedAt] DATETIME2 (7) CONSTRAINT [DF_Countries_UpdatedAt] DEFAULT (getutcdate()) NOT NULL
 
 The endpoint GetCountriesReport is using a simple SqlConnection which opens the endpoint is called.
 Then runs the sql query with a SqlCommand and returns an IQuerable list of ReportDto.
 
 You can test the endpoints with the Swagger.
+I added a test project with some test senarios but I am not so familiar with testing so I think it's not working.
+Or I miss something.
 
-
+Added logging of exceptions in some try catch cases.
 
 
 
